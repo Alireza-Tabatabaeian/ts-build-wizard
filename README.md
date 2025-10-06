@@ -88,7 +88,7 @@ If your library touches **Node built-ins** (e.g., `fs`, `path`) and you select *
 
 Because IIFE code is capsulated in only one block, the `tsdown` library also expect single File entry. So you can manually creat a single file that exports all the features you wish and path it as entry.
 
-If you don't, then my system will automatically merge all the File entries into a single file, and will use it as File entry.
+If you don't, then the system will automatically merge all the File entries into a single file, and will use it as the File entry.
 
 ---
 
@@ -163,4 +163,4 @@ If you want a one-liner build:
 
 ## License
 
-MIT
+MIT © [Alireza Tabatabaeian](https://github.com/Alireza-Tabatabaeian)

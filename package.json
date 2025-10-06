@@ -12,6 +12,11 @@
     "wizard",
     "cli"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Alireza-Tabatabaeian/react-app-registry"
+  },
+  "homepage": "https://github.com/Alireza-Tabatabaeian/react-app-registry#readme",
   "license": "MIT",
   "main": "dist/index.js",
   "author": "Alireza Tabatabaeian",
