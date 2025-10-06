@@ -163,4 +163,4 @@ If you want a one-liner build:
 
 ## License
 
-MIT
+MIT © [Alireza Tabatabaeian](https://github.com/Alireza-Tabatabaeian)
