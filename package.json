@@ -1,0 +1,43 @@
+{
+  "name": "ts-build-wizard",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "typescript",
+    "build",
+    "esm",
+    "cjs",
+    "dts",
+    "exports",
+    "wizard",
+    "cli"
+  ],
+  "license": "MIT",
+  "main": "dist/index.js",
+  "author": "Alireza Tabatabaeian",
+  "type": "module",
+  "bin": {
+    "ts-build-wizard": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "prompts": "^2.4.2",
+    "tsdown": "^0.15.6"
+  },
+  "devDependencies": {
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
