@@ -95,6 +95,14 @@ const main = async () => {
             min: 1,
         },
         {
+            type: (prev, values) => values.formats.length > 1 ? "toggle" : null,
+            name: "formatDir",
+            message: WIZARD_MESSAGES.separateFormats,
+            initial: true,
+            active: "Yes",
+            inactive: "No",
+        },
+        {
             type: "select",
             name: "platform",
             message: WIZARD_MESSAGES.platform,
@@ -284,8 +292,9 @@ async function runBuild(cfg: WizardConfig) {
 }
 
 async function buildPackage(cfg: WizardConfig) {
-    for (let i = 0; i <= (cfg.formatDir ? cfg.formats.length : 1); i++) {
+    for (let i = 0; i < (cfg.formatDir ? cfg.formats.length : 1); i++) {
         const format = cfg.formats[i]
+        console.log(`Creating ${format}...`)
         await build({
             shims: cfg.platform !== "node",
             entry: cfg.entry,
