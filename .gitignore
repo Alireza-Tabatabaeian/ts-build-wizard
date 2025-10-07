@@ -10,3 +10,11 @@ yarn-error.log*
 
 .vscode/*
 .dist
+/dist
+
+package-lock.json
+ts-build-wizard-1.0.0.tgz
+ts-builder-wizard-1.0.0.tgz
+/.idea
+
+.DS_Store
