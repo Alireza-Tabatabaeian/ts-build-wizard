@@ -11,6 +11,7 @@ export type WizardConfig = {
     sourcemap: boolean
     minify: ("no" | "iife" | "all")
     clean: boolean
+    autoExport: boolean
     formatDir: boolean // e.g. dist/esm
     globalName?: string // for iife
 }
@@ -74,5 +75,12 @@ export const WIZARD_MESSAGES = {
     separateFormats: [
         "Format Separation",
         "Do you want each output format in a separate sub-directory (e.g. 'dist/esm') ?"
-    ].join("\n")
+    ].join("\n"),
+    autoExport: [
+        "Auto modify exports",
+        "This is based on `tsdown` exports feature which is still experimental",
+        "Because this system sometimes run build multiple type it might export faulty output",
+        "If you have chosen per format sub directory, or separated client and server deny this option.",
+        "Now do you want package.json modified automatically? (Experimental)"
+    ].join("\n"),
 }

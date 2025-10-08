@@ -156,6 +156,14 @@ const main = async () => {
             active: "yes",
             inactive: "no",
         },
+        {
+            type: "toggle",
+            name: "autoExport",
+            message: WIZARD_MESSAGES.autoExport,
+            initial: false,
+            active: "yes",
+            inactive: "no",
+        }
     ])
 
     ensureGitignore()
@@ -175,12 +183,14 @@ const main = async () => {
     console.log("Building with:", {
         entry: cfg.entry,
         formats: cfg.formats,
+        formatDir: cfg.formatDir,
         platform: cfg.platform,
         dts: cfg.dts,
         sourcemap: cfg.sourcemap,
         minify: cfg.minify,
         outDir: cfg.outDir,
         clean: cfg.clean,
+        autoExport: cfg.autoExport,
         ...(cfg.globalName ? {globalName: cfg.globalName} : {}),
     })
 
@@ -305,7 +315,7 @@ async function buildPackage(cfg: WizardConfig) {
             globalName: cfg.globalName,
             outDir: cfg.formatDir? `${cfg.outDir}/${format}` : cfg.outDir,
             dts: (cfg.clean && i == 0)? true : false,
-            exports: true,
+            exports: cfg.autoExport,
             clean: (cfg.clean && i == 0)? true : false
         })
     }

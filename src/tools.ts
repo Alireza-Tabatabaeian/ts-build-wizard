@@ -94,6 +94,7 @@ export function sanitizeConfig(raw: any): WizardConfig {
         globalName: raw.globalName ? String(raw.globalName) : undefined,
         formatDir: !!raw.formatDir,
         clean: !!raw.clean,
+        autoExport: !!raw.autoExport
     }
 }
 
