@@ -1,9 +1,12 @@
-export type EntryShape = string | string[] | Record<string, string>
-
 export type ClientServer = { client:string, server:string }
+
+export type EntryShape = string | string[] | Record<string, string> | ClientServer
+
+export type MultiEntry = string[] | Record<string, string> | ClientServer
 
 export type WizardConfig = {
     entry: EntryShape
+    mergeInOne?: boolean
     outDir: string
     formats: ("esm" | "cjs" | "iife")[]
     platform: "node" | "browser" | "neutral"
@@ -12,13 +15,13 @@ export type WizardConfig = {
     minify: ("no" | "iife" | "all")
     clean: boolean
     autoExport: boolean
-    formatDir: boolean // e.g. dist/esm
+    formatDir?: boolean // e.g. dist/esm
     globalName?: string // for iife
 }
 
 export const CFG_FILE = "tsbuild.wizard.json"
 export const TEMP_WIZARD_DIRECTORY = ".tmp-wizard"
-export const TEMP_IIF_ENTRY = "iife.entry.ts"
+export const MERGED_ENTRY = "merged.entry.ts"
 
 export const WIZARD_MESSAGES = {
     entryFileMissing: [
@@ -35,12 +38,22 @@ export const WIZARD_MESSAGES = {
     entryFile: [
         "Entry file path",
         "You can use:",
-        "• \"src/index.ts\" (single string)",
-        "• \"src/index.ts\",\"src/cli.ts\" (multiple strings, separated by ',')",
-        "• { index: \"src/main.ts\" } (object; output becomes 'index.[ext]')",
-        "• \"src/**/*.ts\" (glob) — only if your tool supports glob entries",
+        "• 'src/index.ts' (single string)",
+        "• 'src/index.ts','src/cli.ts' (multiple strings, separated by ',')",
+        "• { index: 'src/main.ts' } (object; output becomes 'index.[ext]')",
+        "• 'src/**/*.ts' (glob) — only if your tool supports glob entries",
         "",
         "Enter your desired entry:",
+    ].join("\n"),
+    merge: [
+        "Merge into single entry:",
+        "Since you have multiple entries, output package will have multiple routes.",
+        "As a result the user can't import/require all features directly and should code something like:",
+        "\t```import {FEATURE} from 'PACKAGE_NAME/TOOLS'\n\tFEATURE.use()```",
+        "If merged then the code changes to:",
+        "\t```import {FEATURE} from 'PACKAGE_NAME'\n\tFEATURE.use()```",
+        "",
+        "Do you want all entries to be merged into a single entry automatically?",
     ].join("\n"),
     platform: [
         "Platform",
@@ -78,9 +91,10 @@ export const WIZARD_MESSAGES = {
     ].join("\n"),
     autoExport: [
         "Auto modify exports",
-        "This is based on `tsdown` exports feature which is still experimental",
-        "Because this system sometimes run build multiple type it might export faulty output",
-        "If you have chosen per format sub directory, or separated client and server deny this option.",
-        "Now do you want package.json modified automatically? (Experimental)"
+        "Accepting this option will modify the `package.json` file and sets `main`,`module`,`types`, `exports` attributes when required.",
+        "While the package is designed to be accurate, the result might not be exactly what expected.",
+        "So remember to do a double check to make sure everything is fine.",
+        "",
+        "Do you wish automate package.json modification?"
     ].join("\n"),
 }
