@@ -14,9 +14,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Alireza-Tabatabaeian/react-app-registry"
+    "url": "https://github.com/Alireza-Tabatabaeian/ts-build-wizard"
   },
-  "homepage": "https://github.com/Alireza-Tabatabaeian/react-app-registry#readme",
+  "homepage": "https://github.com/Alireza-Tabatabaeian/ts-build-wizard#readme",
   "license": "MIT",
   "main": "dist/index.js",
   "author": "Alireza Tabatabaeian",
