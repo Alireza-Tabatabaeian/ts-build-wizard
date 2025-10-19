@@ -15,6 +15,8 @@ It asks simple questions, explains each choice, installs what you need, remember
 - ✅ Auto-installs **TypeScript** + **tsdown** if missing
 - ✅ Remembers your choices in `tsbuild.wizard.json`
 - ✅ Reuses previous config on the next run (or lets you re-decide)
+- ✅ Auto-merges multi-entry for **IIFE** (or when you ask to **merge in one**)
+- ✅ Creates a **backup** of your output folder before cleaning
 
 ---
 
@@ -28,7 +30,7 @@ npx ts-build-wizard
 
 The wizard will:
 1. Check for `package.json` and `tsconfig.json` (creates a sane `tsconfig.json` if missing).
-2. Ask about **entry**, **formats** (esm/cjs/iife), **platform** (node/browser/neutral), **sourcemaps**, **types**, **minify**, and **clean**.
+2. Ask about **entry**, **formats** (esm/cjs/iife), **platform** (node/browser/neutral), **sourcemaps**, **types**, **minify**, **clean**, and **auto-export**.
 3. Save your choices to **`tsbuild.wizard.json`**.
 4. Install `typescript` + `tsdown` if needed.
 5. Run the build.
@@ -37,70 +39,114 @@ Next time, it will detect `tsbuild.wizard.json` and ask if you want to **reuse**
 
 ---
 
-## Concepts (what the questions mean)
+## Entry configuration (all the ways)
 
-- **Entry file**
-    - It can be single or multiple files. In this file you need to export things that think other might need to import/require when using your package.
-    - If FUNCTION_A has used FUNCTION_B, then exporting FUNCTION_A, will build and bundle FUNCTION_B in the package automatically (so FUNCTION_A can use it), but the package user won't be able to import/require FUNCTION_B.
+You can provide the **entry** in several shapes. The wizard accepts a **string**, **array**, **object**, or a **glob**. It normalizes your input internally.
 
-- **Formats**
-    - **ESM** (for `import …`) – modern JS modules.
-    - **CJS** (for `require(…)`) – Node/CommonJS.
-    - **IIFE** – a single browser bundle exposed as a **global** (e.g., `window.MyLib`).
+### 1) Single string
+```jsonc
+"entry": "src/index.ts"
+```
 
-- **Platform**
-    - **node** – Node.js runtime (and most Node-compatible runtimes like Bun).
-    - **browser** – web browsers/CDN.
-    - **neutral** – no Node/browser polyfills; best for shared libraries.
+### 2) Array (multiple files)
+```jsonc
+"entry": ["src/index.ts", "src/cli.ts"]
+```
 
-- **Sourcemaps**
-    - Maps your built code back to your TS files for better stack traces and debugging.
-    - Trade-off: larger artifacts and slightly slower builds.
+### 3) Object (alias → file)
+```jsonc
+"entry": {
+  "index": "src/main.ts",
+  "tools": "src/tools/index.ts"
+}
+```
+- **Export routes** for multi-entry are derived from file locations **relative to the common source folder** (e.g. `src/tools` → `./tools`). If the file name is `index.ts`, the `index` suffix is **omitted** from the export path (so `src/utils/index.ts` becomes export path `./utils`).
 
-- **Type declarations (`.d.ts`)**
-    - Highly recommended for library consumers using TypeScript/IDE IntelliSense.
+### 4) Glob
+```jsonc
+"entry": "src/**/*.ts"
+```
+- The wizard expands the files and (when needed) **auto-generates a barrel** to make them importable/exportable.
 
-- **Clean**
-    - If **true**, the output folder (e.g., `dist`) is cleared before building.
-    - Set **false** when you intentionally run multiple builds into the same folder (e.g., two passes with different platforms).
+### 5) Client/Server split (special object)
+Use this when your package has **browser** and **node** code separated:
 
----
+```jsonc
+"entry": {
+  "client": "src/index.client.ts",
+  "server": "src/index.server.ts",
+  "tools":  "src/tools.ts",
+  "demo":   "src/demo/pack.ts"
 
-## Node built-ins (fs, path, …) and platform **neutral**
+  "__default__": "node" // or omit / set anything else for "client" default
+}
+```
+- Keys **must** be exactly `"client"` and `"server"`.
+- `__default__` decides which side is considered the **default** export:
+    - `__default__: "node"` → the **server** build becomes default
+    - `__default__` missing or any other value → the **client** build becomes default
+    - also if there exist more entries like `tools` and `demo`, then adding `__default__`: "node" → will cause those entries to be built for `node` platform. 
+- The wizard builds **client** with `platform: "browser"` and **server** with `platform: "node"`. If your `formats` include `iife`, it is **excluded** from the server build automatically.
 
-If your library touches **Node built-ins** (e.g., `fs`, `path`) and you select **neutral**:
-- Neutral **does not** polyfill Node APIs for the browser.
-- You must either:
-    1. **Split entries as object with `client`, `server` keys**: (recommended)
-        - `src/index.client.ts` (no Node built-ins)
-        - `src/index.server.ts` (Node-only logic)
-        - In the wizard, set entries like:  
-          `{ client: "src/index.client.ts", server: "src/index.server.ts" }`
-        - **Note 1:** paths could be anything (e.g. "src/clientSide.ts"), but keys should be `client` and `server` so that system can recognize the situation.
-        - **Note 2:** If you follow this approach properly you shouldn't see any warning about Node built-ins usage, if any warning appeared it means some Node built-ins is used in client side.
-        - **Note 3:** assume you've a function like `checkAccess` which is not using Node built-ins, and you have exported it in `index.client.ts` but it would become handy in server side too, in this case it would be nice (slightly recommended) that export it in `index.server.ts` too, so user won't need to import both in his code.
-       
-    2. **Run the wizard twice**, changing `platform` each time, and set **Clean = No** on the second pass so previous outputs are kept.
-
----
-
-## IIFE and multiple file entry
-
-Because IIFE code is capsulated in only one block, the `tsdown` library also expect single File entry. So you can manually creat a single file that exports all the features you wish and path it as entry.
-
-If you don't, then the system will automatically merge all the File entries into a single file, and will use it as the File entry.
+> Tip: If a utility (e.g., `checkAccess`) is shared by both sides, export it from **both** files so end users don’t have to import from two different subpaths.
 
 ---
 
-## Altering `package.json` (library)
+## IIFE and multi-entry
 
-Thanks to `tsdown`'s experimental feature, the system will automatically modify the `package.json` and assigns proper attributes like `main`, `module`, `types`, `exports`.
-However, as this feature is experimental, it's better to duble-check for any issues.
+IIFE bundles must start from a **single** file (they expose a single global). You have two options:
 
-The resulting package should be something like this:
+1) Create your own **barrel** that re-exports everything you want and pass **that** as the entry, **or**
+2) Let the wizard **auto-merge** your multi-entry/glob into a temporary barrel under `.tmp-wizard/merged.entry.ts`:
+    - If your `formats` include **`iife`**, the wizard will auto-merge for IIFE.
+    - If you set **“Merge into single entry”** = **Yes**, the wizard will also build **non-IIFE** formats from that merged barrel.
+
+When auto-merging for IIFE, the export names inside the barrel are made safe (slashes become underscores, etc.)
+
+In special case of **Client/Server split** the wizard won't merge entries into single file, as it's nonsense. Yet if you have multiple entries to be built for browser and formats include **IIFE**, then the wizard will automatically create a barrel of all entries excluding `server`. 
+
+---
+
+## Platform and Node built-ins
+
+- **node** – Node.js runtime (and Node-compatible runtimes like Bun).
+- **browser** – Web browsers/CDN.
+- **neutral** – No Node/browser polyfills. Good for shared libraries.
+
+If your library references **Node built-ins** (`fs`, `path`, …) and you target **neutral** or **browser**, you must either:
+- Split entries with **client/server** keys (recommended), or
+- Run the wizard twice with different `platform` settings and set **Clean = No** on the second pass.
+
+---
+
+## Formats & directories
+
+- **ESM** → `import …`
+- **CJS** → `require(…)`
+- **IIFE** → browser global (set **Global name** to choose e.g., `window.MyLib`)
+
+If you enable **Separate format outputs**, builds go to subfolders:
+```
+dist/esm/…  dist/cjs/…  (and dist/iife/… if used)
+```
+Otherwise, all outputs land directly under `dist/`.
+
+---
+
+## Auto-exporting `package.json`
+
+If you enable **Auto modify exports**, the wizard updates your `package.json` using your build outputs:
+- Sets `main`, `module`, `types`
+- Generates `exports`:
+    - `"."` points to the default file (ESM if `"type":"module"` and ESM is built; otherwise CJS)
+    - Additional entries map to subpaths like `"./tools"` etc.
+- Ensures your `dist` folder appears in `"files"`
+
+> This relies on `tsdown` behavior and your actual outputs. It’s robust but experimental — please **double-check** after a build.
+
+**Example result:**
 ```jsonc
 {
-  "name": "react-app-registry",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -111,24 +157,39 @@ The resulting package should be something like this:
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
-    }
+    },
+    "./tools": {
+      "types": "./dist/tools.d.ts",
+      "import": "./dist/tools.mjs",
+      "require": "./dist/tools.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": ["dist", "README.md", "LICENSE"]
 }
 ```
 
-> If you ship a browser-specific IIFE file, you can also wire a `browser` condition or document the path directly.
+---
+
+## Cleaning & backups
+
+When **Clean** is **true**, the wizard:
+1. **Backs up** your current output folder (e.g., `dist`) into **`.TSBW-BKUP/`**
+2. **Deletes** the target output folder
+3. Runs the build
+
+If the backup fails, you’ll be asked whether to continue or stop.  
+`.TSBW-BKUP/` is added to `.gitignore` automatically.
 
 ---
 
-## Reusing configuration
+## Generated / helper files
 
-The wizard writes:
-- **`tsbuild.wizard.json`** – your choices (entry, formats, platform, sourcemap, etc.).
-- **`.tmp-wizard/iife.entry.ts`** – auto-generated barrel (only when needed for IIFE + glob/multi-entry).
+- **`tsbuild.wizard.json`** – Saved choices. You can commit this for team-wide consistency.
+- **`.tmp-wizard/merged.entry.ts`** – Auto-generated barrel used for IIFE or merge scenarios (safe to ignore/clean).
+- **`.TSBW-BKUP/`** – Backup of your previous `dist` (only created when **Clean** is on).
 
-On the next run, it will offer to **reuse** the previous config.  
-Add `.tmp-wizard/` to `.gitignore`. You can choose whether to commit `tsbuild.wizard.json` (team-wide) or ignore it (per-dev).
+Your `.gitignore` is updated to include: `dist`, `node_modules`, `.tmp-wizard`, `.TSBW-BKUP`.
 
 ---
 
@@ -139,25 +200,48 @@ If you want a one-liner build:
 ```json
 {
   "scripts": {
-    "build": "ts-build-wizard"
+    "build": "ts-build-wizard",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   }
 }
 ```
 
+Then run:
+```bash
+npm run build
+```
+
+#### Important: 
+Even though I mentioned that this is **optional** to set `"build": "ts-build-wizard"`, It's ***highly recommended***. Some CI templates or dev habits run npm run build before publishing. If "build" points to tsc, it may overwrite the wizard’s output and produce a different dist/. Use tsc --noEmit for type-checking (e.g., npm run typecheck) and wire prepublishOnly to the wizarded build. 
+
 ---
 
-## Troubleshooting
+## Troubleshooting & tips
 
-- **Bundler warns about `fs`/`path` in ESM**
-    - Ensure your browser entry doesn’t import Node built-ins, or split into browser/server entries as shown above.
+- **“default files not found. unable to modify package.json automatically”**
+    - Usually means expected outputs (`.mjs`/`.cjs`/`.d.mts`) weren’t produced where we looked. Recheck `outDir`/`formatDir` and whether your entry actually builds.
 - **IIFE + multiple entries**
-    - IIFE needs a **single** entry (it exposes one global). Use a **barrel** entry or let the wizard auto-generate one from a glob.
-- **Nothing happens / Not found**
-    - Ensure your project has a `package.json`.
-    - Make sure the **entry** paths actually exist.
-    - If you selected “neutral”, remember it won’t polyfill Node APIs.
-- **Rebuild with previous settings**
-    - Re-run the wizard and choose **Reuse** when prompted.
+    - IIFE needs a single entry. Use a manual barrel or let the wizard auto-merge.
+- **Browser build contains Node APIs**
+    - Ensure your `client` entry and its imports avoid Node built-ins; otherwise, split client/server properly.
+- **Choosing defaults in multi-entry (non client/server)**
+    - If an entry file is named `index.ts`, it’s preferred as the **default**. Otherwise the first valid entry becomes default; the rest are exported under subpaths derived from their relative locations.
+- **Export paths for sub-entries**
+    - For files like `src/utils/index.ts`, the export path becomes `./utils` (no trailing `/index`). For non-`index` files, the file name is included (e.g., `src/utils/math.ts` → `./utils/math`).
+
+---
+
+## FAQ
+
+**Q: If function A uses function B, but I only export A, can users import B?**  
+**A:** No. Only **exported** symbols from your entry files are published for consumers. `B` will be bundled if needed by `A`, but it won’t be **publicly importable** unless you export it too.
+
+**Q: Can I run separate “node” and “browser” builds into the same `dist/`?**  
+**A:** Yes. Run the wizard twice with different `platform` choices. Make sure the **second run** sets **Clean = No** so the first results remain.
+
+**Q: How is the IIFE global name set?**  
+**A:** When `format = iife`, the wizard passes the **Global name** you provided to the bundler so your bundle is exposed as `window.<GlobalName>`.
 
 ---
 

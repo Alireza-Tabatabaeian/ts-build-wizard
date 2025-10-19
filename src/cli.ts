@@ -1,17 +1,12 @@
 #!/usr/bin/env node
 import prompts from "prompts"
 
-import {WIZARD_MESSAGES, WizardConfig} from "./core"
-import {canMerge, sanitizeConfig} from "./tools"
-import {runBuild} from "./build"
-import {
-    ensureGitignore,
-    ensureTsconfig,
-    inferEntry,
-    packageJsonExist
-} from "./fileTools"
-import {ensureDeps} from "./dependencyHandler"
-import {configViewer, readConfigFile, saveConfig} from "./configTools"
+import {WIZARD_MESSAGES} from "./core"
+import {ensureGitignore, ensureTsconfig, inferEntry, packageJsonExist} from "./fileTools"
+import {WizardConfig, configViewer, readConfigFile, sanitizeConfig, saveConfig} from "./config"
+import {ensureDeps} from "./tools/dependencyHandler"
+import {runBuild} from "./buildComponents"
+import {canMerge} from "./entry/entryCheck"
 
 const main = async () => {
     if (!packageJsonExist()) {

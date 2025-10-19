@@ -1,28 +1,3 @@
-export type ClientServer = { client:string, server:string }
-
-export type EntryShape = string | string[] | Record<string, string> | ClientServer
-
-export type MultiEntry = string[] | Record<string, string> | ClientServer
-
-export type WizardConfig = {
-    entry: EntryShape
-    mergeInOne?: boolean
-    outDir: string
-    formats: ("esm" | "cjs" | "iife")[]
-    platform: "node" | "browser" | "neutral"
-    dts: boolean
-    sourcemap: boolean
-    minify: ("no" | "iife" | "all")
-    clean: boolean
-    autoExport: boolean
-    formatDir?: boolean // e.g. dist/esm
-    globalName?: string // for iife
-}
-
-export const CFG_FILE = "tsbuild.wizard.json"
-export const TEMP_WIZARD_DIRECTORY = ".tmp-wizard"
-export const MERGED_ENTRY = "merged.entry.ts"
-
 export const WIZARD_MESSAGES = {
     entryFileMissing: [
         "Entry file:",
