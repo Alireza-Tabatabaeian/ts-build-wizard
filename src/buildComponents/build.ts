@@ -1,5 +1,5 @@
 import prompts from "prompts"
-import {build, Options} from "tsdown"
+import {build, UserConfig} from "tsdown"
 
 import {alterPackageJson} from "./packageJsonTools"
 import {entryValidator, getDefaultAndExport} from "../entry/entryTools"
@@ -11,7 +11,7 @@ import {clearPath, findSourceDir, mergeMultipleEntries, createDistBackup} from "
 import {MultiEntry} from "../entry"
 
 
-const REQUIRED_OPTIONS: Partial<Options> = {clean: false, fixedExtension: true}
+const REQUIRED_OPTIONS: Partial<UserConfig> = {clean: false}
 
 export const runBuild = async (cfg: WizardConfig) => {
 
@@ -99,7 +99,7 @@ export const runBuild = async (cfg: WizardConfig) => {
 
 
 export const buildFormats = async (cfg: WizardConfig, simpleBuild: boolean) => {
-    const userOptions: Options = {
+    const userOptions: UserConfig = {
         entry: cfg.entry,
         platform: cfg.platform,
         format: cfg.formats,
@@ -127,7 +127,7 @@ export const buildFormats = async (cfg: WizardConfig, simpleBuild: boolean) => {
     }
 }
 
-const buildByTsdown = async (userOptions: Partial<Options>) => {
+const buildByTsdown = async (userOptions: Partial<UserConfig>) => {
     const options = {...userOptions, ...REQUIRED_OPTIONS}
     try {
         await build(options)

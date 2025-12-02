@@ -33,7 +33,7 @@ export const alterPackageJson = async (defaultAndExports: DefaultAndExport, sour
     }
 
     const defaultFileName = fileRelativeParts(defaultAndExports.default,sourceDir).baseFileName
-    const paths: ExportInfo = outputFormatPath(defaultFileName, cfg.formatDir === true, cfg.outDir, defaultESM)
+    const paths: ExportInfo = outputFormatPath(defaultFileName, cfg.formatDir === true, cfg.outDir,esmPackage, defaultESM)
 
     if (paths.default === undefined) {
         console.warn("default files not found. unable to modify package.json automatically")
@@ -46,7 +46,7 @@ export const alterPackageJson = async (defaultAndExports: DefaultAndExport, sour
 
     for(const exportItem of defaultAndExports.exports ?? []) {
         const fileParts = fileRelativeParts(exportItem,sourceDir)
-        otherExports[`./${fileParts.toAlias()}`] = outputFormatPath(fileParts.toPath(),cfg.formatDir === true, cfg.outDir, defaultESM)
+        otherExports[`./${fileParts.toAlias()}`] = outputFormatPath(fileParts.toPath(),cfg.formatDir === true, cfg.outDir,esmPackage, defaultESM)
     }
 
     pkg.exports = {
@@ -65,12 +65,17 @@ const outputFormatPath = (
     fileName: string,
     formatDir: boolean,
     outDir: string,
+    esmPackage: boolean,
     defaultESM: boolean
 ): ExportInfo => {
-    const esmPath = formatDir ? `./${outDir}/esm/${fileName}.mjs` : `./${outDir}/${fileName}.mjs`
-    const cjsPath = formatDir ? `./${outDir}/cjs/${fileName}.cjs` : `./${outDir}/${fileName}.cjs`
-    const esmDeclare = formatDir ? `./${outDir}/esm/${fileName}.d.mts` : `./${outDir}/${fileName}.d.mts`
-    const cjsDeclare = formatDir ? `./${outDir}/cjs/${fileName}.d.cts` : `./${outDir}/${fileName}.d.cts`
+    const esmFileExt = esmPackage ? 'js': 'mjs'
+    const cjsFileExt = esmPackage ? 'cjs' : 'js'
+    const esmDeclareExt = esmPackage ? 'ts' : 'mts'
+    const cjsDeclareEXT = esmPackage ? 'cts': 'ts'
+    const esmPath = formatDir ? `./${outDir}/esm/${fileName}.${esmFileExt}` : `./${outDir}/${fileName}.${esmFileExt}`
+    const cjsPath = formatDir ? `./${outDir}/cjs/${fileName}.${cjsFileExt}` : `./${outDir}/${fileName}.${cjsFileExt}`
+    const esmDeclare = formatDir ? `./${outDir}/esm/${fileName}.d.${esmDeclareExt}` : `./${outDir}/${fileName}.d.${esmDeclareExt}`
+    const cjsDeclare = formatDir ? `./${outDir}/cjs/${fileName}.d.${cjsDeclareEXT}` : `./${outDir}/${fileName}.d.${cjsDeclareEXT}`
     const validEsm = isValidPath(esmPath)
     const validCjs = isValidPath(cjsPath)
     const validEsmDeclare = isValidPath(esmDeclare)
